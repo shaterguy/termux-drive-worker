@@ -1,0 +1,19 @@
+# Runtime state, credentials and machine-specific secrets
+.env
+.env.*
+!.env.example
+node_modules/
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*token*.json
+.selfrun-server/
+.drive-worker/
+state/
+jobs/
+*.log
+*.sock
+*.lock
+.DS_Store

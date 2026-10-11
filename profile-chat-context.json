@@ -1,0 +1,32 @@
+{
+  "schema": "normal-chat-collector-context-v1",
+  "target_server": "Galaxy-Tab-S11-Ultra",
+  "selfrun_root": "/data/data/com.termux/files/home/work/selfrun-done-4d6fe4a-tablet-20261007/termux-server",
+  "source_hashes": {
+    "src/browser/chatgpt.mjs": "4540cb3d3ae454a8d96e90f51a831b32c6ce13074a42857ee1f82de6ecbf2f72",
+    "src/browser/cdp.mjs": "fbd4fd79240b6a681f102600383e8613b2a82a1145f2f2d80da9e0809a4d934c",
+    "src/config.mjs": "389a80b1be9c383f63220b8417ea9f62b8a956d11a7f30f63571dacc84919439",
+    "src/lifecycle.mjs": "812cf6dc2af599b7353877e9da3ffd548da1ed565214538e08985b8d5ab67413",
+    "src/prompt-directives.mjs": "f914d8dd83e1eb4d61f2ebc88b649dd6cae0a8edc47ff20058d93e7321875481",
+    "src/browser/extension-profile-bootstrap.mjs": "f6fbd6a67a94b5cbb9eb083ba1726b6b95bd08aee2b542c81df295f4e2ee6cf5"
+  },
+  "profile_fingerprint": "a9d7d32e83eeca710be826e55e77b557ae913b473f4c9b69fd6fdbece3a54e58",
+  "profile_environment": {
+    "SELFRUN_BROWSER_ADAPTER": "extension",
+    "SELFRUN_BROWSER_CLIENT_PROFILE": "android-webview",
+    "SELFRUN_EXTENSION_PROFILE_BOOTSTRAP": "cdp-emulation",
+    "SELFRUN_EXTENSION_BRIDGE_PORT": "17832",
+    "SELFRUN_BROWSER_PORT": "19227",
+    "SELFRUN_BROWSER_PROFILE": "/data/data/com.termux/files/home/.config/chromium",
+    "SELFRUN_BROWSER_ANDROID_USER_AGENT": "",
+    "SELFRUN_BROWSER_ANDROID_MODEL": "SM-S931N",
+    "SELFRUN_BROWSER_ANDROID_VERSION": "17",
+    "SELFRUN_BROWSER_ANDROID_PLATFORM_VERSION": "17.0.0",
+    "SELFRUN_BROWSER_ANDROID_BUILD_ID": "BP4A.251205.006",
+    "SELFRUN_BROWSER_ANDROID_CHROME_VERSION": "149.0.7827.155",
+    "SELFRUN_BROWSER_ANDROID_ACCEPT_LANGUAGE": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "SELFRUN_BROWSER_ANDROID_WIDTH": "412",
+    "SELFRUN_BROWSER_ANDROID_HEIGHT": "915",
+    "SELFRUN_BROWSER_ANDROID_DPR": "3"
+  }
+}
