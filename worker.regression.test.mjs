@@ -48,6 +48,7 @@ async function harness(options={}){
     setTimeout,clearTimeout,Date,DATA:root,HOME:root,DEFAULT_SHELL:'/bin/bash',
     RESULTS_FOLDER_ID:'fake-results', TERMINAL_RESULT_STATUSES:new Set(['DONE','FAILED','ERROR','TIMED_OUT','INVALID']),
     shuttingDown:false, runtime,unsettledResults,publicationFailures,drive,
+    enforceCommandResumeFence: options.admissionCheck || (async () => ({ allowed: true })),
     clusterRuntime:{role:'ACTIVE'},canClaimCommands:()=>true,
     commandTargetServer:job=>String(job.target_server||''),
     serverName:()=> 'Galaxy-S25',serverPriority:()=>2,memberIsAlive:options.memberIsAlive||(()=>false),
@@ -192,5 +193,26 @@ test('execution timeout kills process and releases active child',async()=>{
   const r=await h.context.runJobForTest(h.file('timeout'),j);
   assert.equal(r.result.status,'TIMED_OUT');
   assert.equal(h.runtime.activeJobs.size,0);
+ }finally{await h.close();}
+});
+
+
+test('resume fence excludes stale commands before claim and leaves Result absent',async()=>{
+ const h=await harness({admissionCheck:async()=>({allowed:false,retry_later:false,reason:'before_resume_cutoff'})});
+ try {
+  const result=await h.run('old-resume');
+  assert.equal(result.reason,'before_resume_cutoff');
+  assert.equal(h.drive.status('old-resume'),null);
+  assert.equal(h.count(),0);
+ }finally{await h.close();}
+});
+
+test('resume metadata failure retries without creating INVALID or CLAIMED',async()=>{
+ const h=await harness({admissionCheck:async()=>({allowed:false,retry_later:true,reason:'provider_metadata_read_failed'})});
+ try {
+  const result=await h.run('meta-missing');
+  assert.equal(result.retry_later,true);
+  assert.equal(h.drive.status('meta-missing'),null);
+  assert.equal(h.count(),0);
  }finally{await h.close();}
 });

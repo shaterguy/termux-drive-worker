@@ -11,8 +11,9 @@ import { ProfileSyncCoordinator } from './profile-sync-coordination.mjs';
 import { recoverOwnedCatalogTab } from './profile-chat-collector.mjs';
 import { SharedGoogleAuthClient } from './shared-google-auth-client.mjs';
 import { inventoryArtifacts, publishInventoryArtifacts } from './inventory-publication.mjs';
+import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutoff.mjs';
 
-const VERSION = '0.2.18-dev4';
+const VERSION = '0.2.18-dev5';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -325,7 +326,7 @@ class DriveClient {
       const params = new URLSearchParams({
         q,
         spaces: 'drive',
-        fields: 'nextPageToken,files(id,name,mimeType,modifiedTime,size,webViewLink)',
+        fields: 'nextPageToken,files(id,name,mimeType,createdTime,modifiedTime,appProperties,size,webViewLink)',
         pageSize: '1000',
         orderBy: 'modifiedTime',
       });
@@ -347,7 +348,7 @@ class DriveClient {
   async getMetadata(fileId) {
     const response = await this.request(
       API + '/files/' + encodeURIComponent(fileId) + '?' + new URLSearchParams({
-        fields: 'id,name,mimeType,parents,trashed',
+        fields: 'id,name,mimeType,createdTime,modifiedTime,appProperties,parents,trashed',
       }),
     );
     const raw = await response.text();
@@ -1478,6 +1479,52 @@ function commandSummary(job, file) {
   };
 }
 
+
+async function enforceCommandResumeFence(file, job) {
+  const fence = await loadResumeFence(
+    path.join(HOME, '.termux-watchdog', 'command-resume-fence-v1.json'),
+    path.join(HOME, '.termux-watchdog', 'power-mode-v2.json'),
+    serverName(),
+  );
+  if (fence.kind === 'NONE') return { allowed: true, reason: 'no_resume_fence' };
+  if (fence.kind !== 'READY') {
+    return { allowed: false, retry_later: true, reason: fence.reason };
+  }
+  let commandMetadata;
+  let originMetadata = null;
+  try {
+    commandMetadata = await drive.getMetadata(file.id);
+    if (job.origin_command_file_id) {
+      const sourceId = String(job.origin_command_file_id);
+      if (sourceId === file.id) return { allowed: false, retry_later: true, reason: 'routed_origin_invalid' };
+      originMetadata = await drive.getMetadata(sourceId);
+    } else if (/\\.target-[A-Za-z0-9._-]+\\.json$/.test(file.name)) {
+      return { allowed: false, retry_later: true, reason: 'routed_origin_missing' };
+    }
+  } catch {
+    return { allowed: false, retry_later: true, reason: 'provider_metadata_read_failed' };
+  }
+  const verdict = classifyCommandAdmission(fence, commandMetadata, originMetadata, {
+    commandsFolderId: COMMANDS_FOLDER_ID,
+  });
+  if (!verdict.allowed && !verdict.retry_later) {
+    const record = {
+      event: 'DRIVE_WORKER_COMMAND_EXCLUDED_BY_RESUME',
+      server_name: serverName(), job_id: safeJobName(job.job_id),
+      command_file_id: file.id, origin_command_file_id: job.origin_command_file_id || file.id,
+      reason: verdict.reason, received_at: verdict.received_at, cutoff_at: verdict.cutoff_at,
+      admission_basis: verdict.admission_basis, recorded_at: new Date().toISOString(),
+    };
+    try {
+      await fs.appendFile(path.join(DATA, 'resume-command-exclusions.jsonl'), JSON.stringify(record) + '\\n', { mode: 0o600 });
+      console.log(JSON.stringify(record));
+    } catch {
+      return { allowed: false, retry_later: true, reason: 'exclusion_audit_failed' };
+    }
+  }
+  return verdict;
+}
+
 // The local terminal record is authoritative for whether a command ran.
 // A failed Drive publication may be retried, but the command must never run again.
 const publicationRetryAfter = new Map();
@@ -1610,6 +1657,9 @@ async function runJobExclusive(file, job) {
       return { skipped: true, reason: 'quarantine_publication_pending', retry_later: true };
     }
   }
+
+  const admission = await enforceCommandResumeFence(file, job);
+  if (!admission.allowed) return { skipped: true, ...admission };
 
   // A claim request already sent before the fence is accepted work, even
   // when its response arrives after a signal. Keep its terminal result tracked.
@@ -2145,7 +2195,14 @@ async function routeOneQueuedCommandToStandbyWork(files, publication) {
       continue;
     }
 
-    const routedJob = { ...job, target_server: standby.name };
+    // Preserve original provenance. A newly created routed file is not a new
+    // command receipt and cannot bypass the standby server's resume cutoff.
+    const originId = String(job.origin_command_file_id || file.id);
+    let originMetadata;
+    try { originMetadata = await drive.getMetadata(originId); } catch { continue; }
+    if (!originMetadata?.createdTime || originMetadata?.trashed) continue;
+    const routedJob = { ...job, target_server: standby.name,
+      origin_command_file_id: originId, origin_command_created_at: originMetadata.createdTime };
     const routedName = jobId + '.target-' + safeServerKey(standby.name) + '.json';
     let routedFile = await drive.findByName(COMMANDS_FOLDER_ID, routedName);
     if (shuttingDown) return null;

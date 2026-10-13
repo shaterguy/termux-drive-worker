@@ -23,3 +23,7 @@
 - `deploy/drive-worker-run.Galaxy-Tab-S11-Ultra.sh`: 검증된 태블릿 런처 설정 사본. 사용자 기기 경로를 포함하므로 자동으로 다른 장치에 적용하지 않습니다.
 - `deploy/runit-run.sh`: 서비스 실행 래퍼 사본.
 - 각 장치의 환경변수·인증·구성 파일은 로컬 보안 저장소가 담당합니다. Git 이력에 운영 자격증명을 넣지 않습니다.
+
+## Watchdog resume command fence
+
+The active Watchdog Termux mode controller writes `~/.termux-watchdog/command-resume-fence-v1.json` before restarting services from sleep. Commands admitted before that per-device cutoff are excluded without creating an INVALID, CLAIMED or RUNNING Result. The original source file creation timestamp, not `modifiedTime`, is authoritative for previously submitted commands; clients that create in another folder and move later should stamp an immutable `appProperties.dw_commands_admitted_at` upon admission to Commands. Without a trusted admission stamp, ambiguous precreated files fail closed. Routed commands preserve original source identity and use its metadata. Failures to read trusted provider metadata or a resume fence defer execution rather than causing replay.
