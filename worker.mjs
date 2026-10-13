@@ -6,6 +6,7 @@ import http from 'node:http';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { detectCapabilities } from './capabilities.mjs';
+import { renderProgramInventoryMarkdown } from './program-catalog.mjs';
 import { runProfileSyncOnce } from './profile-sync-runtime.mjs';
 import { ProfileSyncCoordinator } from './profile-sync-coordination.mjs';
 import { recoverOwnedCatalogTab } from './profile-chat-collector.mjs';
@@ -13,7 +14,7 @@ import { SharedGoogleAuthClient } from './shared-google-auth-client.mjs';
 import { inventoryArtifacts, publishInventoryArtifacts } from './inventory-publication.mjs';
 import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutoff.mjs';
 
-const VERSION = '0.2.18-dev5';
+const VERSION = '0.2.18-dev6';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -1220,6 +1221,9 @@ function renderCapabilitiesMarkdown(capabilities) {
     '',
     '## Notable programs',
     notable || '- none',
+    '',
+    '## 주요 프로그램 기능 및 대표 명령어',
+    renderProgramInventoryMarkdown(capabilities?.programs),
     '',
     '## Installed agent skills',
     skills,

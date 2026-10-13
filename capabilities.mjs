@@ -1,12 +1,13 @@
 import fs from 'node:fs/promises';
 import fss from 'node:fs';
 import path from 'node:path';
+import { buildProgramInventory } from './program-catalog.mjs';
 
 const NOTABLE = [
   'git','gh','node','npm','npx','skills','python','python3','java','javac','gradle','adb',
   'chromium','chromium-browser','google-chrome','ffmpeg','curl','wget','jq',
   'proot','proot-distro','ssh','scp','rsync','make','cmake','clang','gcc','g++',
-  'kotlinc','sdkmanager'
+  'kotlinc','sdkmanager','rea','rea-full','apktool','rclone','pandoc'
 ];
 
 function uniq(values) {
@@ -195,10 +196,12 @@ export async function detectCapabilities(options = {}) {
   const prefix = options.prefix || process.env.PREFIX || '/data/data/com.termux/files/usr';
   const home = options.home || process.env.HOME || '/data/data/com.termux/files/home';
   const pathValue = options.pathValue ?? process.env.PATH ?? '';
+  const host = { kind: 'termux', home, prefix, ...(await scanHost(pathValue)) };
   return {
     schema: 'drive-worker-capabilities-v1',
     detected_at: new Date().toISOString(),
-    host: { kind: 'termux', home, prefix, ...(await scanHost(pathValue)) },
+    host,
+    programs: await buildProgramInventory(host.locations, {home,prefix}),
     proot: await scanProot(prefix),
     skills: await scanSkills(home),
   };
