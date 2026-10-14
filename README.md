@@ -3,9 +3,9 @@
 사용자 소유 Android Termux의 Google Drive 명령 실행 및 ACTIVE/STANDBY 운영을 위한 **비공개 권위원본**입니다.
 
 - 권위 저장소: `shaterguy/termux-drive-worker` (GitHub private).
-- 현재 소스 계보: `v0.2.18-dev7` (2026-10-14).
+- 현재 소스 계보: `v0.2.18-dev8` (2026-10-14).
 - 태블릿 `Galaxy-Tab-S11-Ultra`: ACTIVE; 휴대폰 `Galaxy-S25`: STANDBY (배포 당시 확인 기준).
-- 운영 소스 `worker.mjs` SHA-256: `f654eec54097fc64a26e79816f249eb6b2e1148980522f9fc23204854f691564`.
+- 운영 소스 `worker.mjs` SHA-256: `b6671ac827a436f7bde0cdd30ccdfb598e49a6cc8f5617e520a8e79f004673f3`.
 - Node.js ESM 엔트리포인트 `worker.mjs`. 나머지 모듈은 상대 import로 사용됩니다.
 - 회귀 테스트: `node --test worker.regression.test.mjs` (10개).
 - 기존 검증된 릴리스 폴더는 이력으로 보존합니다. 현재 실행 릴리스는 각 장치의 `~/bin/drive-worker-run`에서 확인합니다.

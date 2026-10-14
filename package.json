@@ -1,7 +1,7 @@
 {
   "name": "termux-drive-worker",
   "private": true,
-  "version": "0.2.18-dev7",
+  "version": "0.2.18-dev8",
   "type": "module",
   "scripts": {
     "test": "node --test worker.regression.test.mjs program-catalog.test.mjs mcp-usage-docs.test.mjs",

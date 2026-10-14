@@ -16,7 +16,7 @@ import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutof
 
 import { UsageDriveStore, publishUsage, renderIndex, mergeManaged } from './mcp-usage-docs.mjs';
 
-const VERSION = '0.2.18-dev7';
+const VERSION = '0.2.18-dev8';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
