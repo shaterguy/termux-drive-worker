@@ -3,9 +3,9 @@
 사용자 소유 Android Termux의 Google Drive 명령 실행 및 ACTIVE/STANDBY 운영을 위한 **비공개 권위원본**입니다.
 
 - 권위 저장소: `shaterguy/termux-drive-worker` (GitHub private).
-- 현재 소스 계보: `v0.2.18-dev6` (2026-10-13).
+- 현재 소스 계보: `v0.2.18-dev7` (2026-10-14).
 - 태블릿 `Galaxy-Tab-S11-Ultra`: ACTIVE; 휴대폰 `Galaxy-S25`: STANDBY (배포 당시 확인 기준).
-- 운영 소스 `worker.mjs` SHA-256: `41698337c9e7480ea81c85ce45997e89b7ad988e52063217596e28c2c086bff5`.
+- 운영 소스 `worker.mjs` SHA-256: `f654eec54097fc64a26e79816f249eb6b2e1148980522f9fc23204854f691564`.
 - Node.js ESM 엔트리포인트 `worker.mjs`. 나머지 모듈은 상대 import로 사용됩니다.
 - 회귀 테스트: `node --test worker.regression.test.mjs` (10개).
 - 기존 검증된 릴리스 폴더는 이력으로 보존합니다. 현재 실행 릴리스는 각 장치의 `~/bin/drive-worker-run`에서 확인합니다.
@@ -35,3 +35,10 @@ The active Watchdog Termux mode controller writes `~/.termux-watchdog/command-re
 - `help.status`는 도움말 명령 실행 여부이고 `operation_tested`는 실제 업무 명령 실행의 검증 여부입니다. 참고 예시를 실사용 성공으로 간주하지 않습니다.
 - ACTIVE Drive Worker는 약 5분마다 `TERMUX_CAPABILITIES.md`와 `capabilities.json`을 동일 Drive 파일 ID로 갱신하고 readback합니다.
 - 신규 패키지는 다음 인벤토리 갱신 때 반영되며, 내장 설명이 없는 사용자 스크립트는 상세 기능을 임의로 추측하지 않습니다.
+
+## TMCP별 자동 사용법 문서 (dev7)
+- 기존 mcp-inventory-refresh의 tools/list 결과를 재사용하여 민감값을 제거한 schema 캐시를 생성합니다.
+- 기존 ACTIVE Worker inventory 동기화가 MCP_INDEX의 짧은 MANUAL 실행 안내와 TMCP별 사용법 링크를 같은 파일 ID로 갱신합니다.
+- 문서는 required/type/nested/union 입력, 교체형 CLI 템플릿, 출력 계약, 버전·schema hash·상태를 포함합니다.
+- ID를 공유 manifest에 조건부 예약하고 동일 ID 생성·회수·readback합니다. ETag 충돌과 사용자 자동구역 편집은 덮어쓰지 않습니다.
+- 자세한 보존·실패 처리·배포 계약은 TDOC_USAGE_PUBLICATION.md를 참조합니다.

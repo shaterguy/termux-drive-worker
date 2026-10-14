@@ -11,10 +11,12 @@ import { runProfileSyncOnce } from './profile-sync-runtime.mjs';
 import { ProfileSyncCoordinator } from './profile-sync-coordination.mjs';
 import { recoverOwnedCatalogTab } from './profile-chat-collector.mjs';
 import { SharedGoogleAuthClient } from './shared-google-auth-client.mjs';
-import { inventoryArtifacts, publishInventoryArtifacts } from './inventory-publication.mjs';
+import { inventoryArtifacts, publishInventoryArtifacts, remoteArtifactMatches } from './inventory-publication.mjs';
 import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutoff.mjs';
 
-const VERSION = '0.2.18-dev6';
+import { UsageDriveStore, publishUsage, renderIndex, mergeManaged } from './mcp-usage-docs.mjs';
+
+const VERSION = '0.2.18-dev7';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -1120,74 +1122,31 @@ async function syncMcpInventoryToDrive() {
   if (!servers) throw new Error('invalid MCP inventory: servers array missing');
 
   const sourceGeneratedAt = inventory.generated_at || null;
-  const bodyMarkdown = String(rawMarkdown || '')
-    .replace(/^# Termux MCP Inventorys*/u, '## Inventory\n\n');
-  const indexMarkdown = [
-    '# MCP_INDEX',
-    '',
-    'Drive Worker가 Termux MCP registry와 실제 tools/list 검증 결과를 동기화한 일반 ChatGPT용 인덱스입니다.',
-    'MCP 선택 시 connection_mode, endpoint, tool 목록, health와 secret 분류를 이 문서에서 확인합니다.',
-    '',
-    '- source_generated_at: ' + String(sourceGeneratedAt || ''),
-    '- synced_at: ' + syncedAt,
-    '- server_count: ' + servers.length,
-    '- root: /GPT/MCP/',
-    '',
-    bodyMarkdown.trimEnd(),
-    '',
-  ].join('\n');
-
-  const indexJson = {
-    schema: 'chatgpt-drive-mcp-index-v1',
-    generated_at: syncedAt,
-    source_generated_at: sourceGeneratedAt,
-    root_folder_id: MCP_FOLDER_ID,
-    registry_file: inventory.registry_file || null,
-    server_count: servers.length,
-    servers,
-  };
-
-  const publication = await publishInventoryArtifacts({kind:'mcp',artifacts:inventoryArtifacts('mcp',indexJson,indexMarkdown),drive,isActive:inventoryActive,targets:[
-    {id:'1Gqc32cEZtGTgQ2f4QvkcITdrlSGYUvP8',format:'markdown',mimeType:'text/markdown'},
-    {id:'1mvkob4mGkZc5R4HcQ4o0-uUyaT9GU2nP',format:'json',mimeType:'application/json'},
-  ]});
-  runtime.mcpSync = {publication,folder_id:MCP_FOLDER_ID,server_count:servers.length};
-  if(publication.status!=='VERIFIED')throw Error('INVENTORY_MCP_PUBLICATION_INCOMPLETE');
-  const indexMdFile={id:'1Gqc32cEZtGTgQ2f4QvkcITdrlSGYUvP8'},indexJsonFile={id:'1mvkob4mGkZc5R4HcQ4o0-uUyaT9GU2nP'};
-  if(publication.targets.every(item=>item.status==='UNCHANGED')){runtime.lastMcpSyncError=null;return runtime.mcpSync;}
-  if(!await inventoryActive())throw Error('INVENTORY_ROLE_EPOCH_CHANGED');
-
-  const manifest = {
-    schema: 'drive-worker-mcp-sync-manifest-v1',
-    updated_at: syncedAt,
-    source_generated_at: sourceGeneratedAt,
-    root_folder_id: MCP_FOLDER_ID,
-    source_json: MCP_INVENTORY_JSON,
-    source_markdown: MCP_INVENTORY_MD,
-    server_count: servers.length,
-    server_names: servers.map((item) => item?.name).filter(Boolean),
-    index_md_file_id: indexMdFile.id,
-    index_json_file_id: indexJsonFile.id,
-  };
-  const manifestFile = await drive.uploadText(
-    MCP_FOLDER_ID,
-    MCP_SYNC_MANIFEST,
-    JSON.stringify(manifest, null, 2) + '\n',
-    'application/json; charset=utf-8',
-  );
-
-  runtime.mcpSync = {
-    publication,
-    updated_at: syncedAt,
-    source_generated_at: sourceGeneratedAt,
-    folder_id: MCP_FOLDER_ID,
-    server_count: servers.length,
-    server_names: manifest.server_names,
-    index_md_file_id: indexMdFile.id,
-    index_json_file_id: indexJsonFile.id,
-    manifest_file_id: manifestFile.id,
-  };
-  runtime.lastMcpSyncError = null;
+  const store = new UsageDriveStore(drive, MCP_FOLDER_ID, inventoryActive);
+  const docs = await publishUsage({servers,store,home:HOME,journalPath:path.join(DATA,'mcp-usage-docs-journal.json'),now:syncedAt});
+  const mdId='1Gqc32cEZtGTgQ2f4QvkcITdrlSGYUvP8',jsonId='1mvkob4mGkZc5R4HcQ4o0-uUyaT9GU2nP',manifestId='1l5KBRPNCejrpARvP2fwI1YCIqGAZzaCm';
+  const currentMd=await store.read(mdId), currentJson=await store.read(jsonId);
+  let oldJson;try{oldJson=JSON.parse(currentJson.text);}catch{throw Error('INVENTORY_JSON_INVALID');}
+  for(const d of docs){if(d.status==='stale'){const previous=oldJson.usage_documents?.find(p=>p.name===d.name);if(previous?.tools)d.tools=previous.tools;}}
+  const serverViews=servers.map(s=>Object.fromEntries(['name','version','source_commit','connection_mode','transport','health','last_verified_at','tool_count','tool_names'].filter(k=>s[k]!==undefined).map(k=>[k,s[k]])));
+  const indexJson={...oldJson,schema:'chatgpt-drive-mcp-index-v2',generated_at:syncedAt,source_generated_at:sourceGeneratedAt,root_folder_id:MCP_FOLDER_ID,server_count:servers.length,servers:serverViews,usage_documents:docs};
+  delete indexJson.content_hash;
+  const rendered=renderIndex(servers,docs,sourceGeneratedAt);
+  let mdBase=currentMd.text;
+  if(!mdBase.includes('<!-- TMCP-USAGE:BEGIN ')){
+    const oldHash=mdBase.match(/^<!-- inventory_content_hash: ([a-f0-9]{64}) -->/)?.[1];
+    if(!oldHash||!remoteArtifactMatches('mcp','markdown',mdBase,oldHash))throw Error('INVENTORY_USER_EDIT_CONFLICT');
+    mdBase='';
+  }
+  const artifacts=inventoryArtifacts('mcp',indexJson,rendered);
+  await store.update(currentMd,mergeManaged(mdBase,rendered));
+  await store.update(currentJson,artifacts.json);
+  const currentManifest=await store.read(manifestId);
+  let oldManifest;try{oldManifest=JSON.parse(currentManifest.text);}catch{throw Error('INVENTORY_MANIFEST_INVALID');}
+  const manifest={...oldManifest,schema:'drive-worker-mcp-sync-manifest-v2',updated_at:syncedAt,source_generated_at:sourceGeneratedAt,server_count:servers.length,server_names:servers.map(s=>s.name),index_md_file_id:mdId,index_json_file_id:jsonId,usage_documents:docs.map(({tools,...d})=>d),publisher_version:VERSION};
+  await store.update(currentManifest,JSON.stringify(manifest,null,2)+'\n');
+  runtime.mcpSync={status:docs.every(d=>d.status!=='stale')?'VERIFIED':'PARTIAL_STALE',updated_at:syncedAt,folder_id:MCP_FOLDER_ID,server_count:servers.length,usage_doc_count:docs.filter(d=>d.id).length,index_md_file_id:mdId,index_json_file_id:jsonId,manifest_file_id:manifestId};
+  runtime.lastMcpSyncError=docs.some(d=>d.status==='stale')?'USAGE_DOCS_STALE':null;
   return runtime.mcpSync;
 }
 

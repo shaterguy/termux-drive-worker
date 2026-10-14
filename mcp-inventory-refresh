@@ -1,0 +1,150 @@
+#!/data/data/com.termux/files/usr/bin/python
+import datetime,hashlib,json,os,pathlib,subprocess,urllib.request,urllib.parse
+home=pathlib.Path(os.environ.get("HOME","/data/data/com.termux/files/home"))
+reg=home/".drive-worker"/"mcp-servers.json"
+outj=home/"MCP_INVENTORY.json"; outm=home/"MCP_INVENTORY.md"
+try:data=json.loads(reg.read_text())
+except Exception:data={}
+def run(args,timeout=20):
+    try:
+        p=subprocess.run(args,text=True,capture_output=True,timeout=timeout)
+        return p.returncode,(p.stdout or ""),(p.stderr or "")
+    except Exception as e:return 124,"",type(e).__name__
+def package_version(root):
+    p=pathlib.Path(root or "")
+    if not root:return None
+    pj=p/"package.json"
+    if pj.exists():
+        try:return str(json.loads(pj.read_text()).get("version") or "") or None
+        except Exception:pass
+    py=p/"pyproject.toml"
+    if py.exists():
+        try:
+            import tomllib
+            d=tomllib.loads(py.read_text()); return d.get("project",{}).get("version")
+        except Exception:pass
+    return None
+def canonical_deployment_mode(cfg,connection_mode):
+    explicit=cfg.get("deployment_mode")
+    if explicit in {"official_remote","user_owned_local","local_only"}:
+        return explicit
+    source_type=str(cfg.get("source_type") or "").strip().lower()
+    if connection_mode=="official-remote":
+        return "official_remote"
+    if connection_mode in {"local-selfhost","local","local-only"} and source_type.startswith("user-owned"):
+        return "user_owned_local"
+    return "local_only"
+def canonical_local_port(cfg,deployment_mode):
+    if deployment_mode=="official_remote":
+        return None
+    explicit=cfg.get("local_port")
+    if explicit is not None:
+        try:
+            port=int(explicit)
+            if 1 <= port <= 65535:
+                return port
+        except Exception:
+            pass
+    try:
+        parsed=urllib.parse.urlparse(str(cfg.get("url") or ""))
+        host=(parsed.hostname or "").lower()
+        if host in {"127.0.0.1","localhost","::1"}:
+            return parsed.port
+    except Exception:
+        pass
+    return None
+def string_list(value):
+    if not isinstance(value,list):
+        return []
+    return [str(x) for x in value if x is not None and str(x)]
+now=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")
+items=[]
+tool_cache={}
+sanitizer=pathlib.Path(__file__).resolve().with_name("mcp-usage-docs.mjs")
+for name,cfg in sorted(data.items()):
+    if not isinstance(cfg,dict):continue
+    root=str(cfg.get("root") or "")
+    rc,stdout,stderr=run([str(home/"bin"/"mcp-call"),name,"tools"],45)
+    tool_names=[]; server_version=None
+    if rc==0:
+        try:
+            obj=json.loads(stdout)
+            tool_names=[str(x.get("name")) for x in obj.get("tools",[]) if isinstance(x,dict) and x.get("name")]
+            server_version=(obj.get("server_info") or {}).get("version")
+        except Exception:pass
+    tool_cache[name]={"status":"error","collected_at":now,"error":"TOOLS_LIST_FAILED"}
+    if rc==0:
+        try:
+            sanitized=subprocess.run(["node",str(sanitizer),"--sanitize-tools"],input=stdout,text=True,capture_output=True,timeout=15)
+            if sanitized.returncode!=0:raise ValueError("SANITIZE_FAILED")
+            tool_cache[name]={"status":"ok","collected_at":now,"tools":json.loads(sanitized.stdout)}
+        except Exception:tool_cache[name]["error"]="TOOLS_SANITIZE_FAILED"
+    fingerprint_payload={k:cfg.get(k) for k in ["root","version","source_commit","url"]}
+    tool_cache[name]["registry_fingerprint"]=hashlib.sha256(json.dumps(fingerprint_payload,ensure_ascii=False,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    tool_cache[name]["source_commit"]=cfg.get("source_commit")
+    health={"ok":rc==0,"tools_rc":rc}
+    hurl=cfg.get("health")
+    if hurl:
+        try:
+            req=urllib.request.Request(str(hurl),headers={"User-Agent":"DriveWorker-MCP-Inventory/1"})
+            with urllib.request.urlopen(req,timeout=8) as r:
+                status=int(r.status)
+                health.update({"http_status":status,"health_ok":200<=status<300})
+        except Exception as e:health.update({"health_ok":False,"health_error":type(e).__name__})
+    svc=cfg.get("service"); service_status=None
+    if svc:
+        rc2,o2,e2=run(["sv","status",str(pathlib.Path(os.environ.get("PREFIX","/data/data/com.termux/files/usr"))/"var"/"service"/str(svc))],10)
+        service_status=(o2 or e2).strip()[:500]
+    mode=cfg.get("connection_mode")
+    if not mode:
+        mode="local-selfhost" if svc or str(cfg.get("url","")).startswith("http://127.0.0.1") else "remote"
+    deployment_mode=canonical_deployment_mode(cfg,mode)
+    local_port=canonical_local_port(cfg,deployment_mode)
+    official_endpoint=cfg.get("official_endpoint") or cfg.get("official_remote_url")
+    if not official_endpoint and deployment_mode=="official_remote":
+        official_endpoint=cfg.get("url")
+    items.append({
+      "name":name,
+      "connection_mode":mode,
+      "deployment_mode":deployment_mode,
+      "source_type":cfg.get("source_type"),
+      "source":cfg.get("source"),
+      "source_commit":cfg.get("source_commit"),
+      "version":cfg.get("version") or package_version(root) or server_version,
+      "install_root":root or None,
+      "runtime":cfg.get("runtime"),
+      "mcp_sdk":cfg.get("mcp_sdk"),
+      "transport":cfg.get("transport"),
+      "endpoint":cfg.get("url"),
+      "official_endpoint":official_endpoint,
+      "official_remote_url":cfg.get("official_remote_url"),
+      "health_endpoint":hurl,
+      "service":svc,
+      "local_port":local_port,
+      "service_status":service_status,
+      "tool_count":len(tool_names),
+      "tool_names":tool_names,
+      "required_secret_names":string_list(cfg.get("required_secret_names",[])),
+      "optional_secret_names":string_list(cfg.get("optional_secret_names",[])),
+      "selfhost_only_secret_names":string_list(cfg.get("selfhost_only_secret_names",[])),
+      "health":health,
+      "last_verified_at":now
+    })
+# Only registry-referenced roots are active local MCP install roots. Other directories under ~/mcp may be inactive source/cache.
+active_roots=sorted({str(x.get("install_root")) for x in items if x.get("install_root")})
+payload={"schema":"termux-mcp-inventory-v2","generated_at":now,"registry_file":str(reg),"mcp_root":str(home/"mcp"),"active_local_roots":active_roots,"server_count":len(items),"servers":items}
+if os.environ.get("TDOC_CACHE_ONLY")!="1":
+    tmp=outj.with_suffix(".json.tmp"); tmp.write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n"); os.chmod(tmp,0o600); tmp.replace(outj)
+    lines=["# Termux MCP Inventory","",f"- generated_at: {now}",f"- server_count: {len(items)}",f"- registry: {reg}","", "## Servers"]
+    for x in items:
+        lines += ["",f"### {x['name']}",f"- connection_mode: {x['connection_mode']}",f"- deployment_mode: {x['deployment_mode']}",f"- source_type: {x['source_type']}",f"- source: {x['source']}",f"- version: {x['version']}",f"- install_root: {x['install_root']}",f"- transport: {x['transport']}",f"- endpoint: {x['endpoint']}",f"- official_endpoint: {x['official_endpoint']}",f"- official_remote_url: {x['official_remote_url']}",f"- service: {x['service']}",f"- local_port: {x['local_port']}",f"- tool_count: {x['tool_count']}",f"- tools: {', '.join(x['tool_names'])}",f"- required_secret_names: {', '.join(x['required_secret_names']) or 'none'}",f"- optional_secret_names: {', '.join(x['optional_secret_names']) or 'none'}",f"- selfhost_only_secret_names: {', '.join(x['selfhost_only_secret_names']) or 'none'}",f"- healthy: {bool(x['health'].get('ok'))}",f"- last_verified_at: {x['last_verified_at']}"]
+    outm.write_text("\n".join(lines)+"\n"); os.chmod(outm,0o600)
+    mirror=home/".drive-worker"/"mcp-inventory.json"
+    mirror.write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n"); os.chmod(mirror,0o600)
+print(json.dumps({"schema":payload["schema"],"server_count":len(items),"servers":[{"name":x["name"],"connection_mode":x["connection_mode"],"deployment_mode":x["deployment_mode"],"local_port":x["local_port"],"tool_count":x["tool_count"],"healthy":x["health"]["ok"]} for x in items]},ensure_ascii=False))
+
+
+cache=home/".drive-worker"/"mcp-tools-cache.json"
+cache_tmp=cache.with_suffix(".json.tmp")
+cache_tmp.write_text(json.dumps({"schema":"tmcp-tools-cache-v1","generated_at":now,"servers":tool_cache},ensure_ascii=False)+"\n")
+cache_tmp.replace(cache)
