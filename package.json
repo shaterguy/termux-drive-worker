@@ -1,10 +1,10 @@
 {
   "name": "termux-drive-worker",
   "private": true,
-  "version": "0.2.18-dev8",
+  "version": "0.2.18-dev9",
   "type": "module",
   "scripts": {
-    "test": "node --test worker.regression.test.mjs program-catalog.test.mjs mcp-usage-docs.test.mjs",
+    "test": "node --test worker.regression.test.mjs program-catalog.test.mjs mcp-usage-docs.test.mjs skill-preservation.test.mjs",
     "check": "node --check worker.mjs"
   }
 }

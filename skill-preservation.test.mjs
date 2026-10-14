@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const source=await readFile(new URL('./worker.mjs',import.meta.url),'utf8');
+const start=source.indexOf('  const removed = [];',source.indexOf('async function syncSkillsToDrive'));
+const end=source.indexOf('  const indexedSkills = await collectDriveSkillIndex();',start);
+assert.ok(start>=0&&end>start,'production preservation block must exist');
+const run=new Function('previousManaged','nextManaged','installed','drive',source.slice(start,end)+'\nreturn {nextManaged,removed};');
+const shared={common:{folder_id:'common-folder',skill_file_id:'common-file'},tabletOnly:{folder_id:'original-folder',skill_file_id:'original-file',sha256:'original-hash'}};
+test('Phone local subset preserves Tablet managed skill identities without trash',()=>{let trashes=0;const current={common:{folder_id:'common-folder',sha256:'new-hash'}};const out=run(shared,current,[{name:'common'}],{trashFile(){trashes++;throw Error('must not trash');}});assert.deepEqual(out.nextManaged.tabletOnly,shared.tabletOnly);assert.equal(out.nextManaged.common.sha256,'new-hash');assert.deepEqual(out.removed,[]);assert.equal(trashes,0);});
+test('Tablet full local set keeps refreshed entries',()=>{const current={common:{folder_id:'common-folder'},tabletOnly:{folder_id:'original-folder',sha256:'refreshed'}};const out=run(shared,current,[{name:'common'},{name:'tabletOnly'}],{});assert.equal(out.nextManaged.tabletOnly.sha256,'refreshed');assert.deepEqual(out.removed,[]);});
+test('explicitly removed manifest entries are not resurrected',()=>{const out=run({common:shared.common},{common:shared.common},[{name:'common'}],{});assert.equal(Object.hasOwn(out.nextManaged,'tabletOnly'),false);});
+test('local sync conflicts do not replace current conflict handling',()=>{const out=run(shared,{common:shared.common},[{name:'common'},{name:'tabletOnly'}],{});assert.equal(Object.hasOwn(out.nextManaged,'tabletOnly'),false);});

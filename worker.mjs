@@ -16,7 +16,7 @@ import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutof
 
 import { UsageDriveStore, publishUsage, renderIndex, mergeManaged } from './mcp-usage-docs.mjs';
 
-const VERSION = '0.2.18-dev8';
+const VERSION = '0.2.18-dev9';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -1036,10 +1036,9 @@ async function syncSkillsToDrive(capabilities) {
   for (const [name, entry] of Object.entries(previousManaged)) {
     if (nextManaged[name] || installed.some((skill) => skill.name === name)) continue;
     if (!entry?.folder_id) continue;
-    if (await verifyManagedSkillFolder(entry.folder_id, name)) {
-      await drive.trashFile(entry.folder_id);
-      removed.push(name);
-    }
+    // This shared catalog spans devices with different local installations.
+    // Local absence is not authorization to delete a shared managed skill.
+    nextManaged[name] = entry;
   }
 
   const indexedSkills = await collectDriveSkillIndex();
