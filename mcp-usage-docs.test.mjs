@@ -47,3 +47,35 @@ test('shared manifest reservation reuses ID and CAS conflict never creates a doc
 
 import {renderIndex} from './mcp-usage-docs.mjs';
 test('manual routing describes designated procedure without assigning mover',()=>{const s=renderIndex([],[],'now');assert.ok(s.includes('지정된 MANUAL 절차로 처리된 동일 job_id'));assert.ok(!s.includes('worker가 옮겨'));assert.ok(s.includes('target_server를 생략하거나 AUTO'));});
+
+test('index prefers DriveWorker MCP while retaining manual execution limits',()=>{
+ const s=renderIndex([],[],'now');
+ for(const name of ['publish_manual_command','submit_direct_command','get_job_status','get_job_result'])assert.ok(s.includes(name),name);
+ assert.ok(s.includes('연결된 DriveWorker MCP를 우선'));
+ assert.ok(s.includes('job_id에 MANUAL을 포함'));
+ assert.ok(s.includes('수동 지정 작업을 Commands 폴더에 직접 게시하지 않습니다.'));
+ assert.ok(s.includes('직접 실행이 승인되고 사용자 지정 수동 방식과 충돌하지 않을 때만'));
+ assert.ok(s.includes('같은 작업에 두 제출 도구를 연속 호출하지 않습니다.'));
+ assert.ok(s.includes('DriveWorker MCP를 사용할 수 없을 때만 Google Drive 도구'));
+ assert.ok(s.includes('접근 거절을 우회하지'));
+});
+test('index distinguishes publication from final results and paginates original job logs',()=>{
+ const s=renderIndex([],[],'now');
+ assert.ok(s.includes('동일 job_id의 결과는 get_job_status와 get_job_result'));
+ assert.ok(s.includes('최종 상태·exit_code'));
+ assert.ok(s.includes('limit/cursor'));
+ assert.ok(s.includes('PUBLISHED/AWAITING_MANUAL 및 SUBMITTED 응답은 실행 완료가 아닙니다.'));
+ assert.ok(s.includes('결과 지연만으로 새 job을 중복 제출하거나 수동·직접 경로를 바꾸지 않습니다.'));
+});
+test('MCP guidance preserves per-server links automatic refresh and unmanaged notes',()=>{
+ const docs=[{name:'alpha',status:'fresh',url:'https://drive.google.com/file/d/test/view',source_hash:'abc'}];
+ const rendered=renderIndex([],docs,'2026-10-15T07:00:00Z');
+ assert.ok(rendered.includes('[사용법](https://drive.google.com/file/d/test/view)'));
+ assert.ok(rendered.includes('기존 DriveWorker capabilities/inventory 주기'));
+ assert.ok(rendered.includes('target_server를 생략하거나 AUTO'));
+ assert.ok(rendered.includes('MANUAL-REPLACE_UNIQUE_JOB_ID'));
+ assert.ok(rendered.includes('명령 자체 제한'));
+ const updated=mergeManaged(mergeManaged('','old')+'\nUSER NOTES keep\n',rendered);
+ assert.ok(updated.includes('USER NOTES keep'));
+ assert.ok(updated.includes('publish_manual_command'));
+});

@@ -1,11 +1,11 @@
 {
   "schema": "drive-worker-source-checksums-v1",
-  "version": "0.2.18-dev9",
-  "live_worker_sha256": "08fe72dfaa62c41d03884781c5dd93dd0028d2c4e2ca08cb2b1684b881e74157",
+  "version": "0.2.18-dev10",
+  "live_worker_sha256": "e70f956c77fda5bfd668a42e2a7ff15c7dc0e22e6227acac2c2d205e6ea60c12",
   "checksums": {
     ".gitignore": "61ab67f99c81a10dc66df1e27af7d83d493877cde23f6c6eb87cde44783d9b0b",
     "AGENTS.md": "a0946a9fe4d65636b09146bda80788ae6467cb7c57cd995e797f6a62a0d987ac",
-    "README.md": "82c9b6f144cc3ce5486719227a069e48f8c603eaee73bf82eb3368c4b1fec44d",
+    "README.md": "ac183135b65c41265637aeb271fe3e7b5b360ea8a7e986d491382b332816e37e",
     "TDOC_USAGE_PUBLICATION.md": "b77e7df7961d3e64120005b7998818f0ba99b6f3996379fdb2fa9b95100e1fd2",
     "capabilities.mjs": "0a96f6fd1fbdb7a7b04fef79f57c7e10513d4cb82c4c0ccc5ffeac96c0593146",
     "deploy/RELEASE_MANIFEST.Galaxy-Tab-S11-Ultra.json": "f4c7ab3e814c48dd8d3ce3b5223fe5e7ae12f3ea8e5abc42f4a003a59145ed23",
@@ -14,9 +14,9 @@
     "drive-runtime.mjs": "e3566a723a5a3e442054fd5aa3148bb7bcb1b07da4085b49199472e85ae69a1a",
     "inventory-publication.mjs": "298e6528d076eaa46a8edc3877a61bfe61c02d2b165090a48496ed8cc18fe6fd",
     "mcp-inventory-refresh": "4e36060fb545520c94b39f9434b7627a968e078a2a8c671ca6de05ce40c606f5",
-    "mcp-usage-docs.mjs": "188d2cc4153f5f99bfec2cfed3d7136b0006a6ff2b3aa348dd29eb887a882daf",
-    "mcp-usage-docs.test.mjs": "e51fc3ca5c307032c27212be96bcbc22b6b71631ecbac218e77a791201288a58",
-    "package.json": "9a35929fbf211f469a1824a45e8a27c9d0b470d270465122c320cb601347d8a8",
+    "mcp-usage-docs.mjs": "48b7a08ed96fbb2193b3499e2b76761f7150bd86245a8c0b7b7c5d58841e1f55",
+    "mcp-usage-docs.test.mjs": "edd17bf4be59db41c1593827fde555349798a233da6d47ea6d6f1d7cc58175c4",
+    "package.json": "c55c608dc3cf209ffbc5fd624935eb1bc68d181b45a961c123d6d493418832ac",
     "profile-catalog-core.mjs": "0bd1c203f83fbe760a440642b7886f3612fbc2c3879f3f3c462a6c321b0669c2",
     "profile-chat-collector.mjs": "b8e7a439dc5d33ea1ff54ce44e90612fd9847348034adb6009d72337e1350e18",
     "profile-chat-context.json": "2a97a9f4eab1de26e92c63cc3973151e7f87f9cfe5922b04376b03223a145721",
@@ -37,7 +37,7 @@
     "sleep-command-cutoff.mjs": "a78c68807231634ff57ee242eb0af4ab815ec6686c4fa08b77d0f8bbcd1a0b12",
     "sleep-command-cutoff.test.mjs": "1e9ab6d4a6c1fad07bb63558841f2c47a1b4a51ff14760081daa4a453d1dcdcc",
     "util.mjs": "7c1bccedc9cb966909374c055528a7e97c421351e6dfee9fd7af779e91a86fb5",
-    "worker.mjs": "08fe72dfaa62c41d03884781c5dd93dd0028d2c4e2ca08cb2b1684b881e74157",
+    "worker.mjs": "e70f956c77fda5bfd668a42e2a7ff15c7dc0e22e6227acac2c2d205e6ea60c12",
     "worker.regression.test.mjs": "0a29f781631073dde49c25ca11e20611d76ff9b9e8b6024225d5e232e0b8340b"
   }
 }

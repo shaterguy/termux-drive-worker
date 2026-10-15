@@ -1,11 +1,11 @@
 # Termux Drive Worker
 
-사용자 소유 Android Termux의 Google Drive 명령 실행 및 ACTIVE/STANDBY 운영을 위한 **비공개 권위원본**입니다.
+사용자 소유 Android Termux의 Google Drive 명령 실행 및 ACTIVE/STANDBY 운영을 위한 **권위원본**입니다.
 
-- 권위 저장소: `shaterguy/termux-drive-worker` (GitHub private).
-- 현재 소스 계보: `v0.2.18-dev9` (2026-10-14).
+- 권위 저장소: `shaterguy/termux-drive-worker` (GitHub; 2026-10-15 metadata 기준 public).
+- 현재 소스 계보: `v0.2.18-dev10` (2026-10-15).
 - 태블릿 `Galaxy-Tab-S11-Ultra`: ACTIVE; 휴대폰 `Galaxy-S25`: STANDBY (배포 당시 확인 기준).
-- 운영 소스 `worker.mjs` SHA-256: `08fe72dfaa62c41d03884781c5dd93dd0028d2c4e2ca08cb2b1684b881e74157`.
+- 운영 소스 `worker.mjs` SHA-256: `e70f956c77fda5bfd668a42e2a7ff15c7dc0e22e6227acac2c2d205e6ea60c12`.
 - Node.js ESM 엔트리포인트 `worker.mjs`. 나머지 모듈은 상대 import로 사용됩니다.
 - 회귀 테스트: `node --test worker.regression.test.mjs` (10개).
 - 기존 검증된 릴리스 폴더는 이력으로 보존합니다. 현재 실행 릴리스는 각 장치의 `~/bin/drive-worker-run`에서 확인합니다.
@@ -38,7 +38,7 @@ The active Watchdog Termux mode controller writes `~/.termux-watchdog/command-re
 
 ## TMCP별 자동 사용법 문서 (dev7)
 - 기존 mcp-inventory-refresh의 tools/list 결과를 재사용하여 민감값을 제거한 schema 캐시를 생성합니다.
-- 기존 ACTIVE Worker inventory 동기화가 MCP_INDEX의 짧은 MANUAL 실행 안내와 TMCP별 사용법 링크를 같은 파일 ID로 갱신합니다.
+- 기존 ACTIVE Worker inventory 동기화가 MCP_INDEX의 DriveWorker MCP 우선·MANUAL 기본·승인된 직접 제출·결과 조회 안내와 TMCP별 사용법 링크를 같은 파일 ID로 갱신합니다.
 - 문서는 required/type/nested/union 입력, 교체형 CLI 템플릿, 출력 계약, 버전·schema hash·상태를 포함합니다.
 - ID를 공유 manifest에 조건부 예약하고 동일 ID 생성·회수·readback합니다. ETag 충돌과 사용자 자동구역 편집은 덮어쓰지 않습니다.
 - 자세한 보존·실패 처리·배포 계약은 TDOC_USAGE_PUBLICATION.md를 참조합니다.
