@@ -40,3 +40,24 @@ test('pagination ignores loading text until both range and video identities adva
   await waitForNextRange(page,30,['old']);assert.deepEqual(checked,[false,true]);
  }finally{global.document=saved}
 });
+
+test('zero-height dialog wrapper is an idle surface',async()=>{
+ const {selectIdlePage}=require('./studio-schedule-query.cjs');
+ const priorDoc=global.document,priorStyle=global.getComputedStyle;
+ try {
+  global.document={body:{innerText:''},querySelectorAll:()=>[{getClientRects:()=>[{width:1360,height:0}],getAttribute:()=>null}]};
+  global.getComputedStyle=()=>({visibility:'visible'});
+  const p={url:()=> 'https://studio.youtube.com/channel/UCtest',evaluate:async f=>f()};
+  assert.equal(await selectIdlePage([p],'https://studio.youtube.com/channel/UCtest'),p);
+ }finally{global.document=priorDoc;global.getComputedStyle=priorStyle}
+});
+test('nonzero visible dialog still protects in-progress work',async()=>{
+ const {selectIdlePage}=require('./studio-schedule-query.cjs');
+ const priorDoc=global.document,priorStyle=global.getComputedStyle;
+ try {
+  global.document={body:{innerText:''},querySelectorAll:()=>[{getClientRects:()=>[{width:800,height:600}],getAttribute:()=>null}]};
+  global.getComputedStyle=()=>({visibility:'visible'});
+  const p={url:()=> 'https://studio.youtube.com/channel/UCtest',evaluate:async f=>f()};
+  await assert.rejects(selectIdlePage([p],'https://studio.youtube.com/channel/UCtest'),/NO_IDLE/);
+ }finally{global.document=priorDoc;global.getComputedStyle=priorStyle}
+});

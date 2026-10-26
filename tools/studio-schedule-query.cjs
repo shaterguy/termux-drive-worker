@@ -31,7 +31,7 @@ async function selectIdlePage(pages,prefix) {
   for(const page of candidates) {
     const idle=await page.evaluate(()=>{
       const dialogs=[...document.querySelectorAll('[role="dialog"],tp-yt-paper-dialog,ytcp-dialog,ytcp-uploads-dialog')];
-      const busy=dialogs.some(x=>x.getClientRects().length>0&&getComputedStyle(x).visibility!=='hidden'&&x.getAttribute('aria-hidden')!=='true');
+      const busy=dialogs.some(x=>[...x.getClientRects()].some(r=>r.width>0&&r.height>0)&&getComputedStyle(x).visibility!=='hidden'&&x.getAttribute('aria-hidden')!=='true');
       return !busy&&!/업로드 중|업로드하는 중/.test(document.body.innerText);
     });
     if(idle)return page;

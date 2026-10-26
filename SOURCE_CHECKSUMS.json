@@ -5,8 +5,8 @@
   "checksums": {
     "docs/superpowers/plans/2026-10-26-fastpath.md": "c344993ff0b854be974055c52dc44dce5f6158435854ff48da12525d57a1a21f",
     "inventory-refresh.test.mjs": "4b95cec11eb968a702dd658ae35d93e78a0adf76e940c9cd9472641d4fb0f31d",
-    "tools/studio-schedule-query.cjs": "9034f54b95da99bba4f4ce391cbec36fcdff1ad901afb405d9df4c54fa12c878",
-    "tools/studio-schedule-query.test.cjs": "4e645d75bc6f8fc5c55bb8de7c12aa79378cd1ac10c11085f5f8259a7ac4f20c",
+    "tools/studio-schedule-query.cjs": "f0d2a4adf0aeb9757f5f590352247ff07a64298503ba2002c04fd34b8cdbf227",
+    "tools/studio-schedule-query.test.cjs": "ca1095dffeb469d440950ee1dd85a8746c85a389eabee87c54d4d0798a383d3e",
     ".gitignore": "61ab67f99c81a10dc66df1e27af7d83d493877cde23f6c6eb87cde44783d9b0b",
     "AGENTS.md": "a0946a9fe4d65636b09146bda80788ae6467cb7c57cd995e797f6a62a0d987ac",
     "README.md": "0ea34f624ef00af0079ca400582f95745353fed3e1b6a53915dd56502b8b361b",
