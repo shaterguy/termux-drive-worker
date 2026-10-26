@@ -3,7 +3,7 @@
   "version": "0.2.18-dev11",
   "live_worker_sha256": "268f59d9d697752d96df37a4e14959c09f55e14c38eb7e0b05f8185464516609",
   "checksums": {
-    "docs/superpowers/plans/2026-10-26-fastpath.md": "c344993ff0b854be974055c52dc44dce5f6158435854ff48da12525d57a1a21f",
+    "docs/superpowers/plans/2026-10-26-fastpath.md": "07bd838e0600c228287895959e204c4f0421b1607eab0437e49ff827f4e0fc9f",
     "inventory-refresh.test.mjs": "4b95cec11eb968a702dd658ae35d93e78a0adf76e940c9cd9472641d4fb0f31d",
     "tools/studio-schedule-query.cjs": "f0d2a4adf0aeb9757f5f590352247ff07a64298503ba2002c04fd34b8cdbf227",
     "tools/studio-schedule-query.test.cjs": "ca1095dffeb469d440950ee1dd85a8746c85a389eabee87c54d4d0798a383d3e",
