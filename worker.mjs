@@ -16,7 +16,7 @@ import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutof
 
 import { UsageDriveStore, publishUsage, renderIndex, mergeManaged } from './mcp-usage-docs.mjs';
 
-const VERSION = '0.2.18-dev10';
+const VERSION = '0.2.18-dev11';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -1207,7 +1207,19 @@ async function settleStartedWrites(writes) {
 
 function refreshCapabilities() {
   if (shuttingDown) return Promise.resolve(null);
-  return trackOperation(refreshCapabilitiesWork(), 'refreshCapabilities');
+  if (capabilitiesRefreshPromise) return capabilitiesRefreshPromise;
+  const operation = Promise.resolve()
+    .then(() => refreshCapabilitiesWork())
+    .catch((error) => {
+      runtime.lastCapabilitiesError = String(error?.message || error).slice(0, 1000);
+      return null;
+    })
+    .finally(() => {
+      capabilitiesRefreshPromise = null;
+      nextCapabilitiesAt = Date.now() + CAPABILITIES_REFRESH_MS;
+    });
+  capabilitiesRefreshPromise = trackOperation(operation, 'refreshCapabilities');
+  return capabilitiesRefreshPromise;
 }
 
 async function refreshCapabilitiesWork() {
@@ -2038,6 +2050,7 @@ let shuttingDown = false;
 let heartbeatTimer = null;
 let cpuSamplerTimer = null;
 let nextCapabilitiesAt = 0;
+let capabilitiesRefreshPromise = null;
 let shutdownTask = null;
 let lifecycleTask = null;
 let drainStartedAt = null;
@@ -2347,9 +2360,9 @@ async function mainLoop() {
     }
 
     if (!shuttingDown && clusterRuntime.role === 'ACTIVE'
+        && !capabilitiesRefreshPromise
         && (!runtime.capabilities || Date.now() >= nextCapabilitiesAt)) {
-      await refreshCapabilities();
-      nextCapabilitiesAt = Date.now() + CAPABILITIES_REFRESH_MS;
+      void refreshCapabilities();
     }
 
     if (canClaimCommands()
@@ -2505,7 +2518,7 @@ async function runWorker() {
   }
   if (shuttingDown) return;
   if (clusterRuntime.role === 'ACTIVE') {
-    await refreshCapabilities();
+    void refreshCapabilities();
   }
   if (shuttingDown) return;
   nextCapabilitiesAt = Date.now() + CAPABILITIES_REFRESH_MS;

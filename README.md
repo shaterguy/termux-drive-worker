@@ -42,3 +42,8 @@ The active Watchdog Termux mode controller writes `~/.termux-watchdog/command-re
 - 문서는 required/type/nested/union 입력, 교체형 CLI 템플릿, 출력 계약, 버전·schema hash·상태를 포함합니다.
 - ID를 공유 manifest에 조건부 예약하고 동일 ID 생성·회수·readback합니다. ETag 충돌과 사용자 자동구역 편집은 덮어쓰지 않습니다.
 - 자세한 보존·실패 처리·배포 계약은 TDOC_USAGE_PUBLICATION.md를 참조합니다.
+
+## Nonblocking inventory and browser reads
+Inventory refresh is single-flight background work. Command polling and startup do not wait for program/skill/MCP publication. The five-minute refresh interval, leadership guards, replay fences and runtime cleanup policy are preserved.
+
+Run tools/studio-schedule-query.cjs --channel <channel_id> for a read-only Studio schedule query through an existing idle local Chromium tab. Set NODE_PATH to the installed puppeteer-core directory. Tabs are activated before actions, busy upload dialogs are skipped, pagination requires both range and video identities to advance, and the original tab URL is restored. Use an outer job timeout of 180000 ms; the helper has shorter protocol, navigation and element limits.

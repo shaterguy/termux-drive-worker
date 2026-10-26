@@ -26,4 +26,4 @@ export DRIVE_WORKER_OAUTH_TOKEN_FILE=$HOME/.selfrun-server/drive-auth-token.json
 
 mkdir -p "$DRIVE_WORKER_DATA"
 cd "$HOME/work/drive-worker"
-exec node "/data/data/com.termux/files/home/.drive-worker/releases/v0.2.18-dev4-stale-exit-20261011/worker.mjs"
+exec node "/data/data/com.termux/files/home/.drive-worker/releases/v0.2.18-dev11-nonblocking-20261026/worker.mjs"

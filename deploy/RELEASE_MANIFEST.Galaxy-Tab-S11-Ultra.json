@@ -1,13 +1,13 @@
 {
-  "base_worker_sha256": "9090e9a4e98c966c507a3ec4c3fe57794b74631d3a088eeb36b5d6e609ccd88c",
+  "base_worker_sha256": "e70f956c77fda5bfd668a42e2a7ff15c7dc0e22e6227acac2c2d205e6ea60c12",
   "bridge_manifest_sha256": "6ddd4eb9f96665f37eeb445d63d769b1e2a96efb4995a2b7488b2afba87d9e43",
   "coordination_document_id": "1fHCpUYEu7zld9PZmtll4E3wfWA13M9qy4PR_ZCq1MxY",
   "host": "Galaxy-Tab-S11-Ultra",
   "launcher_bridge_sha256": "0f7f54ae18d5fc8cb00eac7f530cb008b5874301b5edf9e0fc5a88e91a3d0409",
-  "launcher_original_sha256": "b702532e96715ac5c13d587402a1e1bae90fe4ba22aff7313ad5690a7353ccf3",
+  "launcher_original_sha256": "dec8826012a8c4ca76471912b73799ab45bf0432b09c0fb3c87d38e411830e94",
   "predecessor_manifest_sha256": "d09774dd46e9890d89b725b01ccf14700553d46e99c55bc7dad96fd32438b67d",
   "recover_all_sha256": "a7883a74cae8d05afe4f61bd3b3478b5c9e8695e38b17455eb24a0f17ca99380",
-  "release_basename": "v0.2.18-dev4-stale-exit-20261011",
+  "release_basename": "v0.2.18-dev11-nonblocking-20261026",
   "rollback_launcher_sha256": "fa5be22f66ad7a217904edbde41b13604af6bc84038e708cbdcab2932ec89fbc",
   "schema": "final-native-updater-release-v1",
   "service_run_sha256": "9558f327a2825658487881b6e68396bb596cc371c85c49b29eddab1c9e7f38c3",
@@ -32,6 +32,6 @@
     "shared-google-auth-client.mjs": "b82d5607c2b0640281cb2a59810a30f95251f8526c1b8cf8121adfda8be45406",
     "util.mjs": "7c1bccedc9cb966909374c055528a7e97c421351e6dfee9fd7af779e91a86fb5"
   },
-  "version": "0.2.18-dev4",
-  "worker_sha256": "41698337c9e7480ea81c85ce45997e89b7ad988e52063217596e28c2c086bff5"
+  "version": "0.2.18-dev11",
+  "worker_sha256": "268f59d9d697752d96df37a4e14959c09f55e14c38eb7e0b05f8185464516609"
 }
