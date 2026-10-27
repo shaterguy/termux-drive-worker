@@ -10,13 +10,15 @@ import { renderProgramInventoryMarkdown } from './program-catalog.mjs';
 import { runProfileSyncOnce } from './profile-sync-runtime.mjs';
 import { ProfileSyncCoordinator } from './profile-sync-coordination.mjs';
 import { recoverOwnedCatalogTab } from './profile-chat-collector.mjs';
+import { recoverIndependentTab } from './independent-catalog-recovery.mjs';
+const recoverCatalogTab = record => record?.independent ? recoverIndependentTab(record) : recoverOwnedCatalogTab(record);
 import { SharedGoogleAuthClient } from './shared-google-auth-client.mjs';
 import { inventoryArtifacts, publishInventoryArtifacts, remoteArtifactMatches } from './inventory-publication.mjs';
 import { classifyCommandAdmission, loadResumeFence } from './sleep-command-cutoff.mjs';
 
 import { UsageDriveStore, publishUsage, renderIndex, mergeManaged } from './mcp-usage-docs.mjs';
 
-const VERSION = '0.2.18-dev11';
+const VERSION = '0.2.18-dev12';
 const HOME = os.homedir();
 const SERVER_NAME_FILE = process.env.DRIVE_WORKER_SERVER_NAME_FILE || path.join(HOME, 'SERVER_NAME');
 const SERVER_PRIORITY_FILE = process.env.DRIVE_WORKER_SERVER_PRIORITY_FILE || path.join(HOME, 'SERVER_PRIORITY');
@@ -2289,7 +2291,7 @@ let nextProfileSyncRecoveryAt=0;
 function maintainProfileSyncRecovery(){
   if(shuttingDown||runtime.profileSyncRunning||runtime.profileSyncRecoveryRunning||Date.now()<nextProfileSyncRecoveryAt||!fss.existsSync(path.join(DATA,'profile-sync','coordination-journal.json')))return Promise.resolve();
   nextProfileSyncRecoveryAt=Date.now()+15000;runtime.profileSyncRecoveryRunning=true;
-  return trackOperation((async()=>{try{const coordinator=createProfileSyncCoordinator();if(!coordinator.owner)return;runtime.profileSyncCoordination=await coordinator.recover({cleanup:recoverOwnedCatalogTab});}catch{runtime.profileSyncCoordination={status:'RECOVERY_JOURNAL_OR_NETWORK_UNVERIFIED'};}finally{runtime.profileSyncRecoveryRunning=false;}})(),'profileSyncRecovery');
+  return trackOperation((async()=>{try{const coordinator=createProfileSyncCoordinator();if(!coordinator.owner)return;runtime.profileSyncCoordination=await coordinator.recover({cleanup:recoverCatalogTab});}catch{runtime.profileSyncCoordination={status:'RECOVERY_JOURNAL_OR_NETWORK_UNVERIFIED'};}finally{runtime.profileSyncRecoveryRunning=false;}})(),'profileSyncRecovery');
 }
 
 async function refreshProfileRegistriesWork() {
@@ -2302,7 +2304,7 @@ async function refreshProfileRegistriesWork() {
   let coordinator;
   try {
     coordinator=createProfileSyncCoordinator();
-    if(coordinator.owner){runtime.profileSyncCoordination=await coordinator.recover({cleanup:recoverOwnedCatalogTab});if(coordinator.owner)return;}
+    if(coordinator.owner){runtime.profileSyncCoordination=await coordinator.recover({cleanup:recoverCatalogTab});if(coordinator.owner)return;}
     if (!await isActive()) return;
     attemptedAcquire = true;
     safeRelease = true; // This attempt has not launched a collector yet.

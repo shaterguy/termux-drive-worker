@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { createDefaultDriveClient } from './drive-runtime.mjs';
 import { observeWorkModelDiscovery } from './profile-discovery.mjs';
-import { WorkCatalogSource } from './profile-work-source.mjs';
-import { NormalChatCatalogSource } from './profile-chat-source.mjs';
+import { parseWorkCatalog } from './profile-work-source.mjs';
+import { IndependentCatalogSource } from './independent-catalog-source.mjs';
+import { parseNormalChatCatalog } from './profile-chat-source.mjs';
 import {
   GoogleDocsRegistryStore,
   LocalProfileSyncStateStore,
@@ -72,8 +73,8 @@ function safeError(error) {
 function makeSources(config, fetchImpl = fetch, collectChat, chatCanWrite, isActive, deadline, ownershipJournal, reservationOwner, collectWork, workCanWrite) {
   const sourceConfig = { ...defaultConfig().sources, ...(config.sources || {}) };
   return {
-    CHAT: new NormalChatCatalogSource({ collect: collectChat, canWrite: chatCanWrite, isActive, deadline, ownershipJournal, reservationOwner }),
-    WORK: new WorkCatalogSource({collect:collectWork,canWrite:workCanWrite||chatCanWrite,isActive,deadline,ownershipJournal,reservationOwner}),
+    CHAT: new IndependentCatalogSource({ catalogKind:'CHAT', parser:parseNormalChatCatalog, collect:collectChat, canWrite:chatCanWrite, isActive, deadline, ownershipJournal, reservationOwner }),
+    WORK: new IndependentCatalogSource({catalogKind:'WORK',parser:parseWorkCatalog,collect:collectWork,canWrite:workCanWrite||chatCanWrite,isActive,deadline,ownershipJournal,reservationOwner}),
     DISCOVERY: new HttpTrackedSource({
       url: sourceConfig.work_discovery_url,
       parser: parseCodexModelDiscovery,
@@ -142,7 +143,7 @@ export async function runProfileSyncOnce(options = {}) {
 
   return {
     schema: SCHEMA,
-    status: active ? (['CHAT','WORK'].some(mode=>results[mode]?.status==='CURRENT_SELECTABLE_ZERO_BLOCKED')?'CATALOG_PUBLICATION_BLOCKED':'COMPLETED') : 'STANDBY_NOOP',
+    status: active ? (['CHAT','WORK'].some(mode=>results[mode]?.status==='CURRENT_SELECTABLE_ZERO_BLOCKED')?'CATALOG_PUBLICATION_BLOCKED':['CHAT','WORK'].every(mode=>['UPDATED','UNCHANGED','SOURCE_IDENTITY_UNCHANGED',...(dryRun?['DRY_RUN_CHANGE']:[])].includes(results[mode]?.status))?(dryRun?'DRY_RUN_COMPLETED':'COMPLETED'):'INCOMPLETE') : 'STANDBY_NOOP',
     active,
     dry_run: dryRun,
     mutation_enabled: active && !dryRun,

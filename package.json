@@ -1,10 +1,10 @@
 {
   "name": "termux-drive-worker",
   "private": true,
-  "version": "0.2.18-dev11",
+  "version": "0.2.18-dev12",
   "type": "module",
   "scripts": {
-    "test": "node --test worker.regression.test.mjs program-catalog.test.mjs mcp-usage-docs.test.mjs skill-preservation.test.mjs inventory-refresh.test.mjs tools/studio-schedule-query.test.cjs",
+    "test": "node --test worker.regression.test.mjs program-catalog.test.mjs mcp-usage-docs.test.mjs skill-preservation.test.mjs inventory-refresh.test.mjs tools/studio-schedule-query.test.cjs independent-catalog.test.mjs",
     "check": "node --check worker.mjs"
   }
 }
