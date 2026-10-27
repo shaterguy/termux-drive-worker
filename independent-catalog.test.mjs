@@ -64,3 +64,16 @@ test('failed catalog collection is not reported as a completed refresh', async (
  assert.equal(result.results.CHAT.status,'SOURCE_FAILED');
  assert.equal(result.results.WORK.status,'SOURCE_FAILED');
 });
+
+test('standalone browser receives Termux temporary directory', async () => {
+ const {collectorEnvironment}=await import('./independent-catalog-source.mjs');
+ assert.equal(collectorEnvironment().TMPDIR,'/data/data/com.termux/files/usr/tmp');
+});
+test('recovery accepts the existing logged-in browser on the alternate local port', async () => {
+ const {recoverIndependentTab}=await import('./independent-catalog-recovery.mjs');
+ const record={schema:'profile-sync-collector-owner-v1',independent:true,phase:'target_verified',child:{pid:9},browser:{pid:1},debug_port:19227,browser_key:'ws://127.0.0.1:19227/devtools/browser/xyz',own_target_verified:true,own_target_id:'ours'};
+ let calls=[];
+ const fetcher=async url=>{calls.push(url);return {ok:true,json:async()=>url.endsWith('/json/version')?{webSocketDebuggerUrl:record.browser_key}:[]}};
+ assert.equal(await recoverIndependentTab(record,{ended:x=>x?.pid===9,fetcher}),true);
+ assert.ok(calls.every(url=>url.startsWith('http://127.0.0.1:19227/')));
+});

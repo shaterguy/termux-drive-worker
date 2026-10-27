@@ -1,13 +1,14 @@
 import { processEnded } from './profile-sync-recovery.mjs';
 
-const endpoint='http://127.0.0.1:9230';
 export async function recoverIndependentTab(record,{ended=processEnded,fetcher=fetch}={}){
   try {
     if(record?.schema!=='profile-sync-collector-owner-v1'||!record.independent||!ended(record.child))return false;
     if(record.phase==='complete_safe')return true;
     if(!record.browser||ended(record.browser))return true;
     const key=new URL(record.browser_key);
-    if(key.protocol!=='ws:'||key.hostname!=='127.0.0.1'||key.port!=='9230'||!/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(key.pathname)||key.search||key.hash)return false;
+    const port=String(record.debug_port??key.port);
+    if(!['9230','19227'].includes(port)||key.protocol!=='ws:'||key.hostname!=='127.0.0.1'||key.port!==port||!/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(key.pathname)||key.search||key.hash)return false;
+    const endpoint='http://127.0.0.1:'+port;
     const get=async path=>{let r=await fetcher(endpoint+path,{signal:AbortSignal.timeout(4000),redirect:'error'});if(!r.ok)throw Error('HTTP');return await r.json()};
     if((await get('/json/version')).webSocketDebuggerUrl!==record.browser_key)return false;
     const list=await get('/json/list');if(!Array.isArray(list))return false;

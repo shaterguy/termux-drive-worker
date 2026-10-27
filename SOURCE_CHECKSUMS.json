@@ -44,10 +44,10 @@
     "util.mjs": "7c1bccedc9cb966909374c055528a7e97c421351e6dfee9fd7af779e91a86fb5",
     "worker.mjs": "54272fbc746847ee8ec570b4e077d68340824e0d4cf60e21c8c89aa1e9e315dd",
     "worker.regression.test.mjs": "0a29f781631073dde49c25ca11e20611d76ff9b9e8b6024225d5e232e0b8340b",
-    "independent-catalog-collector.mjs": "47ab428998bca5943687a70787a3ff140bbd2f24196a5f82ed217af7daa2597e",
-    "independent-catalog-source.mjs": "984e50b5f8c79e6b0d697491bd8f2371b4c688bac08553cd4a8affcae4cb9396",
-    "independent-catalog-recovery.mjs": "5ab9afe78721e94db2a08436dbf240db4672fb8476716c6c3e35bb471cb071bd",
-    "independent-catalog.test.mjs": "4292ab0a8314c948f343f6804c49a2600b961a3e62cc56283221140f4e9a5fc9"
+    "independent-catalog-collector.mjs": "eabcfd387dd22df4af8175f8ff5cd23cf5d58c00759377109abcf6a89bc287b0",
+    "independent-catalog-source.mjs": "472ac2a928d867a15ca23cf8fed0d71adec6f14865cc3f929214b4e94ce0b086",
+    "independent-catalog-recovery.mjs": "fc075a1f6365f6b2da21e2792683ddf637f4db5260f7978f684d7e2cabe26694",
+    "independent-catalog.test.mjs": "ec7450ee3158b67b1c01163a72b24123874e6befa324a8112d4c573af2e9bec4"
   },
   "candidate_worker_sha256": "54272fbc746847ee8ec570b4e077d68340824e0d4cf60e21c8c89aa1e9e315dd"
 }

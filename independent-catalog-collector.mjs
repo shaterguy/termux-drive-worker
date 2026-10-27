@@ -8,7 +8,7 @@ import { projectWorkCatalog } from './profile-work-catalog-projector.mjs';
 import { projectCatalog } from './profile-chat-collector.mjs';
 
 const HOME='/data/data/com.termux/files/home';
-const ENDPOINT='http://127.0.0.1:9230';
+let ENDPOINT='http://127.0.0.1:9230';
 const profile=HOME+'/.config/chromium';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function opt(name){return process.argv.find(v=>v.startsWith('--'+name+'='))?.slice(name.length+3);}
@@ -20,15 +20,17 @@ async function json(endpoint,init={}) {
 function browserProc() {
   for(const pid of fs.readdirSync('/proc').filter(x=>/^\d+$/.test(x))) {
     try {let a=fs.readFileSync('/proc/'+pid+'/cmdline','utf8').split('\0');
-      if(a.includes('--user-data-dir='+profile)&&a.includes('--remote-debugging-port=9230')&&!a.some(v=>v.startsWith('--type=')))return processIdentity(Number(pid));
+      if(a.includes('--user-data-dir='+profile)&&!a.some(v=>v.startsWith('--type='))){let arg=a.find(v=>v.startsWith('--remote-debugging-port='));let port=arg?.split('=')[1];let identity=processIdentity(Number(pid));if(identity)return {...identity,port};}
     }catch{}
   }
   return null;
 }
 async function browserVersion() {
   let p=browserProc();if(!p)throw Error('BROWSER_PROCESS_UNVERIFIED');
+  if(!['9230','19227'].includes(p.port))throw Error('PROFILE_IN_USE_NO_SUPPORTED_DEBUG_PORT');
+  ENDPOINT='http://127.0.0.1:'+p.port;
   let v=await json('/json/version'),u=new URL(v.webSocketDebuggerUrl);
-  if(u.protocol!=='ws:'||u.hostname!=='127.0.0.1'||u.port!=='9230'||!/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(u.pathname)||u.search||u.hash)throw Error('BROWSER_IDENTITY_UNVERIFIED');
+  if(u.protocol!=='ws:'||u.hostname!=='127.0.0.1'||u.port!==p.port||!/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(u.pathname)||u.search||u.hash)throw Error('BROWSER_IDENTITY_UNVERIFIED');
   return {process:p,key:v.webSocketDebuggerUrl};
 }
 class Session {
@@ -89,25 +91,25 @@ try{
  const kind=opt('catalog-kind');if(!['CHAT','WORK'].includes(kind))throw Error('CATALOG_KIND_INVALID');
  browser=await startBrowser();
  const marker='about:blank#profile-sync-'+randomUUID();
- record({phase:'creation_pending',independent:true,browser:browser.process,browser_key:browser.key,bootstrap_url:marker,debug_port:9230});
+ record({phase:'creation_pending',independent:true,browser:browser.process,browser_key:browser.key,bootstrap_url:marker,debug_port:Number(browser.process.port)});
  const r=await fetch(ENDPOINT+'/json/new?'+encodeURIComponent(marker),{method:'PUT',signal:AbortSignal.timeout(4000)});if(!r.ok)throw Error('TAB_CREATE_FAILED');tab=await r.json();
  if(!/^[a-zA-Z0-9-]+$/.test(tab.id||''))throw Error('TARGET_INVALID');
- let u=new URL(tab.webSocketDebuggerUrl);if(u.protocol!=='ws:'||u.hostname!=='127.0.0.1'||u.port!=='9230'||u.pathname!=='/devtools/page/'+tab.id||u.search||u.hash)throw Error('TARGET_URL_INVALID');
+ let u=new URL(tab.webSocketDebuggerUrl);if(u.protocol!=='ws:'||u.hostname!=='127.0.0.1'||u.port!==browser.process.port||u.pathname!=='/devtools/page/'+tab.id||u.search||u.hash)throw Error('TARGET_URL_INVALID');
  record({phase:'target_verified',own_target_verified:true,own_target_id:tab.id});
  page=new Session(tab.webSocketDebuggerUrl);await page.connect();await page.call('Page.enable');await page.call('Runtime.enable');
  await page.call('Page.navigate',{url:'https://chatgpt.com/'});
  let ready=false;for(let i=0;i<80;i++){if(stopped||Date.now()>=state.deadline)throw Error('PERMIT_EXPIRED');try{const v=await page.call('Runtime.evaluate',{expression:"location.origin === 'https://chatgpt.com' && document.readyState !== 'loading'",returnByValue:true});if(v.result?.value===true){ready=true;break}}catch{}await sleep(250)}
  if(!ready)throw Error('PAGE_NOT_READY');
  const route=kind==='WORK'?'/backend-api/tpp/models/':'/backend-api/models?supports_model_picker_upgrade_presets=true';
- const expression=`(async()=>{const s=await fetch('/api/auth/session',{credentials:'include',signal:AbortSignal.timeout(10000)});if(!s.ok)return {error:'SESSION_HTTP'};const a=await s.json();if(typeof a.accessToken!=='string')return {error:'LOGIN_REQUIRED'};const r=await fetch(${JSON.stringify(route)},{headers:{Authorization:'Bearer '+a.accessToken},credentials:'include',signal:AbortSignal.timeout(12000)});if(!r.ok)return {error:'CATALOG_HTTP_'+r.status};return {catalog:await r.json()};})()`;
+ const expression=`(async()=>{const s=await fetch('/api/auth/session',{credentials:'include',signal:AbortSignal.timeout(10000)});if(!s.ok)return {error:'SESSION_HTTP_'+s.status};const a=await s.json();if(typeof a.accessToken!=='string')return {error:'LOGIN_REQUIRED'};const r=await fetch(${JSON.stringify(route)},{headers:{Authorization:'Bearer '+a.accessToken},credentials:'include',signal:AbortSignal.timeout(12000)});if(!r.ok)return {error:'CATALOG_HTTP_'+r.status};return {catalog:await r.json()};})()`;
  let data=await page.call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
  if(stopped||Date.now()>=state.deadline)throw Error('PERMIT_EXPIRED');
  const v=data.result?.value;if(v?.error)throw Error(v.error);
  const projected=(kind==='WORK'?projectWorkCatalog:projectCatalog)(v?.catalog);
  let safe=await cleanup();if(!safe)throw Error('TAB_CLEANUP_UNVERIFIED');
- record({phase:'complete_safe'});console.log(JSON.stringify({...projected,own_tab_cleanup:'closed'}));
+ record({phase:'complete_safe'});process.stdout.write(JSON.stringify({...projected,own_tab_cleanup:'closed'})+'\n',()=>process.exit(0));
 }catch(e){
  const safe=state?await cleanup().catch(()=>false):true;
  if(safe&&state)try{record({phase:'complete_safe'})}catch{}
- console.log(JSON.stringify({status:'independent_catalog_failed',error:String(e?.message||e).slice(0,150),own_tab_cleanup:safe?'closed':'unknown'}));
+ process.stdout.write(JSON.stringify({status:'independent_catalog_failed',error:String(e?.message||e).slice(0,150),own_tab_cleanup:safe?'closed':'unknown'})+'\n',()=>process.exit(0));
 }

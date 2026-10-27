@@ -1,6 +1,10 @@
 import { fileURLToPath } from 'node:url';
 import { runCollectorProcess } from './profile-chat-source.mjs';
 
+export function collectorEnvironment() {
+  const home='/data/data/com.termux/files/home',prefix='/data/data/com.termux/files/usr';
+  return {HOME:home,PREFIX:prefix,TMPDIR:prefix+'/tmp',PATH:prefix+'/bin:'+home+'/bin'};
+}
 export function validateLoopbackEndpoint(value) {
   try {const u=new URL(value);return u.protocol==='http:'&&u.hostname==='127.0.0.1'&&/^[0-9]+$/.test(u.port)&&u.pathname==='/'&&!u.username&&!u.password&&!u.search&&!u.hash;}catch{return false;}
 }
@@ -9,7 +13,7 @@ export async function collectIndependentCatalog({catalogKind,signal,deadline,own
   try {
     result=await runCollectorProcess(process.execPath,[fileURLToPath(new URL('./independent-catalog-collector.mjs',import.meta.url)),
       '--catalog-kind='+catalogKind,'--ownership-journal='+ownershipJournal,'--reservation-owner='+reservationOwner,'--lease-deadline-ms='+deadline],
-      {timeout:90000,killSignal:'SIGTERM',maxBuffer:196608,signal,ownershipJournal,reservationOwner,env:{HOME:'/data/data/com.termux/files/home'}});
+      {timeout:90000,killSignal:'SIGTERM',maxBuffer:196608,signal,ownershipJournal,reservationOwner,env:collectorEnvironment()});
   }catch(e){onCleanup?.(e.cleanupVerified===true);throw Error('INDEPENDENT_COLLECTION_FAILED');}
   let c;try{c=JSON.parse(result.stdout)}catch{onCleanup?.(false);throw Error('INDEPENDENT_COLLECTION_INVALID');}
   onCleanup?.(c.own_tab_cleanup==='closed');
