@@ -1,9 +1,9 @@
 import { fileURLToPath } from 'node:url';
 import { runCollectorProcess } from './profile-chat-source.mjs';
 
-export function collectorEnvironment() {
+export function collectorEnvironment(source = process.env) {
   const home='/data/data/com.termux/files/home',prefix='/data/data/com.termux/files/usr';
-  return {HOME:home,PREFIX:prefix,TMPDIR:prefix+'/tmp',PATH:prefix+'/bin:'+home+'/bin'};
+  return {HOME:home,PREFIX:prefix,TMPDIR:prefix+'/tmp',PATH:prefix+'/bin:'+home+'/bin',...(source.MODEL_SYNC_CHROMIUM_PROFILE==='vnc'?{MODEL_SYNC_CHROMIUM_PROFILE:'vnc'}:{})};
 }
 export function validateLoopbackEndpoint(value) {
   try {const u=new URL(value);return u.protocol==='http:'&&u.hostname==='127.0.0.1'&&/^[0-9]+$/.test(u.port)&&u.pathname==='/'&&!u.username&&!u.password&&!u.search&&!u.hash;}catch{return false;}

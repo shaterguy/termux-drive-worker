@@ -77,3 +77,11 @@ test('recovery accepts the existing logged-in browser on the alternate local por
  assert.equal(await recoverIndependentTab(record,{ended:x=>x?.pid===9,fetcher}),true);
  assert.ok(calls.every(url=>url.startsWith('http://127.0.0.1:19227/')));
 });
+
+test('collector opts into the dedicated VNC account profile without exposing other environment variables', async () => {
+ const {collectorEnvironment}=await import('./independent-catalog-source.mjs');
+ const options=collectorEnvironment({MODEL_SYNC_CHROMIUM_PROFILE:'vnc',SECRET:'do-not-pass'});
+ assert.equal(options.MODEL_SYNC_CHROMIUM_PROFILE,'vnc');
+ assert.equal(options.SECRET,undefined);
+ assert.equal(collectorEnvironment({MODEL_SYNC_CHROMIUM_PROFILE:'unexpected'}).MODEL_SYNC_CHROMIUM_PROFILE,undefined);
+});

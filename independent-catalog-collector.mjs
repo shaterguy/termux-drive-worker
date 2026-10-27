@@ -9,7 +9,9 @@ import { projectCatalog } from './profile-chat-collector.mjs';
 
 const HOME='/data/data/com.termux/files/home';
 let ENDPOINT='http://127.0.0.1:9230';
-const profile=HOME+'/.config/chromium';
+const useVncProfile=process.env.MODEL_SYNC_CHROMIUM_PROFILE==='vnc';
+const profile=useVncProfile?HOME+'/.drive-worker/model-vnc-login/chromium-profile':HOME+'/.config/chromium';
+const defaultPort=useVncProfile?'19227':'9230';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function opt(name){return process.argv.find(v=>v.startsWith('--'+name+'='))?.slice(name.length+3);}
 async function json(endpoint,init={}) {
@@ -53,7 +55,7 @@ async function startBrowser() {
    if(browserProc())throw e;
    // Chromium's own profile lock prevents taking over a profile in use on another port.
    const executable='/data/data/com.termux/files/usr/lib/chromium/chrome';
-   const child=spawn(executable,['--user-data-dir='+profile,'--remote-debugging-port=9230','--headless=new','--no-sandbox','--disable-gpu','about:blank'],{env:{...process.env,HOME},stdio:'ignore'});
+   const child=spawn(executable,['--user-data-dir='+profile,'--remote-debugging-port='+defaultPort,'--headless=new','--no-sandbox','--disable-gpu','about:blank'],{env:{...process.env,HOME},stdio:'ignore'});
    child.on('error',()=>{});
    spawnedBrowser=child;
    const identity=processIdentity(child.pid);if(!identity)throw Error('BROWSER_START_UNVERIFIED');
